@@ -288,6 +288,31 @@ echo "/dev/mapper/data-data01 /srv/data01 xfs _netdev 0 0" >>/etc/fstab
 mount -a
 ```
 
+High Availability
+-----------------
+
+The recommended setup to achieve HA for NBDE is to bind a client to multiple Tang servers.
+
+After throwing away the temporary LUKS key during the kickstart installation
+above, it is not really obvious how to add additional Tang servers later on.
+The same problem arises if you want to rotate Tang keys as recommended in the
+documentation.
+
+The following script shows how to do the trick: use the existing Tang server to
+manually decrypt the key stored in the LUKS metadata.
+
+```bash
+luksmeta show -d /dev/sda2
+luksmeta load -d /dev/sda2 -s 1  > meta-slot1.enc
+clevis decrypt tang < meta-slot1.enc > meta-slot1.dec
+SECOND_TANG_SERVER=10.0.0.4:8089
+SIG_THP=oEoQ2zYdy4M6r0lpS5QubQNIH_c
+TANG_BINDING="{\"url\":\"http://$SECOND_TANG_SERVER\",\"thp\":\"$SIG_THP\"}"
+clevis luks bind -f -k meta-slot1.dec -d /dev/sda2 tang $TANG_BINDING
+rm -f meta-slot1.enc meta-slot1.dec
+luksmeta show -d /dev/sda2
+```
+
 
 Verification
 ------------
