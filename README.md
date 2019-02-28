@@ -5,13 +5,13 @@ Use Case: Fully Encrypted Disks for RHEL Cloud Instances
 --------------------------------------------------------
 
 #### Primary Actor
-	Ops Admin
+Ops Admin
 #### Goal in Context
-	Have functional, fully encrypted, cost efficient, flexible and reliable RHEL instance deployed into the Cloud for legacy database application purposes.
+Have functional, fully encrypted, cost efficient, flexible and reliable RHEL instance deployed into the Cloud for legacy database application purposes.
 #### Scope
-	System
+System
 #### Level
-	Summary
+Summary
 #### Stakeholders and Interests
 * Business: use cheap storage backend
 * Security: data integrity, confidentiality and availability need to be maintained
@@ -21,13 +21,13 @@ Use Case: Fully Encrypted Disks for RHEL Cloud Instances
   * key renewal must be automated
 * Application Owner: DB performance equal to on premise
 #### Precondition
-	Existing account in cloud
-	two or more RHEL subscriptions
+* Existing account in cloud
+* two or more RHEL subscriptions
 #### Minimal Guarantees
-	OS and data disk encryption
+OS and data disk encryption
 #### Success Guarantees
 #### Trigger
-	Security Compliance Rules
+Security Compliance Rules
 #### Main Success Scenario
 #### Extensions
 * RAID0 or LVM Striping may be used to improve performance
@@ -305,11 +305,10 @@ sudo luksmeta show -d /dev/sda2
 
 
 
-[1] https://access.redhat.com/articles/uploading-rhel-image-to-azure
-[2] https://github.com/latchset/tang
-[3] https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Security_Guide/sec-Using_Network-Bound_Disk_Encryption.html
-[4] http://www.admin-magazine.com/Archive/2018/43/Automatic-data-encryption-and-decryption-with-Clevis-and-Tang
+ [1] https://access.redhat.com/articles/uploading-rhel-image-to-azure
+ [2] https://github.com/latchset/tang
 
+ [3] https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Security_Guide/sec-Using_Network-Bound_Disk_Encryption.html
 
-
+ [4] http://www.admin-magazine.com/Archive/2018/43/Automatic-data-encryption-and-decryption-with-Clevis-and-Tang
 
