@@ -48,10 +48,11 @@ For the encryption key management, a Tang server needs to be available in your n
 
 ```bash
 TANG_PORT=8089
-yum install tang
-sed -i 's/ListenStream=.*/ListenStream=$TANG_PORT/g' /usr/lib/systemd/system/tangd.socket
+yum install -y tang
+sed -i "s/ListenStream=.*/ListenStream=$TANG_PORT/g" /usr/lib/systemd/system/tangd.socket
 firewall-cmd --add-port=$TANG_PORT/tcp
 firewall-cmd --add-port=$TANG_PORT/tcp --permanent
+yum install -y policycoreutils-python
 semanage port -a -t http_port_t -p tcp $TANG_PORT
 systemctl enable tangd.socket --now
 curl http://localhost:$TANG_PORT
@@ -305,10 +306,11 @@ sudo luksmeta show -d /dev/sda2
 
 
 
- [1] https://access.redhat.com/articles/uploading-rhel-image-to-azure
- [2] https://github.com/latchset/tang
+[1] https://access.redhat.com/articles/uploading-rhel-image-to-azure
 
- [3] https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Security_Guide/sec-Using_Network-Bound_Disk_Encryption.html
+[2] https://github.com/latchset/tang
 
- [4] http://www.admin-magazine.com/Archive/2018/43/Automatic-data-encryption-and-decryption-with-Clevis-and-Tang
+[3] https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/Security_Guide/sec-Using_Network-Bound_Disk_Encryption.html
+
+[4] http://www.admin-magazine.com/Archive/2018/43/Automatic-data-encryption-and-decryption-with-Clevis-and-Tang
 
