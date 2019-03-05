@@ -259,6 +259,8 @@ is created using 2 stripes to distribute the data between the two disks.
 
 
 ```bash
+yum -y install clevis-systemd luksmeta
+#
 TEMP_PW=$(pwmake 128)
 TANG_SERVER=85.25.159.110:8089
 SIG_THP=ac_uUhM5qY6mv-6jiv-ORFw-OtI
