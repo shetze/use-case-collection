@@ -274,8 +274,8 @@ cryptsetup luksRemoveKey /dev/sdd <<< $TEMP_PW
 #
 systemctl enable clevis-luks-askpass.path
 systemctl start clevis-luks-askpass.path
-echo "sdc_crypt /dev/sdc _netdev" >>/etc/crypttab
-echo "sdd_crypt /dev/sdd _netdev" >>/etc/crypttab
+echo "sdc_crypt /dev/sdc none _netdev" >>/etc/crypttab
+echo "sdd_crypt /dev/sdd none _netdev" >>/etc/crypttab
 systemctl restart cryptsetup.target
 #
 pvcreate /dev/mapper/sdc_crypt
