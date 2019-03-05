@@ -266,19 +266,20 @@ TANG_SERVER=85.25.159.110:8089
 SIG_THP=ac_uUhM5qY6mv-6jiv-ORFw-OtI
 TANG_BINDING="{\"url\":\"http://$TANG_SERVER\",\"thp\":\"$SIG_THP\"}"
 #
-cryptsetup luksFormat /dev/sdc - <<<$TEMP_PW
+cryptsetup -q luksFormat /dev/sdc <<< $TEMP_PW
 clevis luks bind -f -k- -d /dev/sdc tang $TANG_BINDING <<< $TEMP_PW
+cryptsetup open --type luks /dev/sdc sdc_crypt <<<$TEMP_PW
 cryptsetup luksRemoveKey /dev/sdc <<< $TEMP_PW
 #
-cryptsetup luksFormat /dev/sdd - <<<$TEMP_PW
+cryptsetup -q luksFormat /dev/sdd <<< $TEMP_PW
 clevis luks bind -f -k- -d /dev/sdd tang $TANG_BINDING <<< $TEMP_PW
+cryptsetup open --type luks /dev/sdd sdd_crypt <<<$TEMP_PW
 cryptsetup luksRemoveKey /dev/sdd <<< $TEMP_PW
 #
 systemctl enable clevis-luks-askpass.path
 systemctl start clevis-luks-askpass.path
 echo "sdc_crypt /dev/sdc none _netdev" >>/etc/crypttab
 echo "sdd_crypt /dev/sdd none _netdev" >>/etc/crypttab
-systemctl restart cryptsetup.target
 #
 pvcreate /dev/mapper/sdc_crypt
 pvcreate /dev/mapper/sdd_crypt
