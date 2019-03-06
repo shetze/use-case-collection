@@ -1,30 +1,39 @@
-Use Case Description: Template
+Use Case: Deploy SAP HANA Database into the Azure Cloud
 ==============================
 
-This document serves as a template for arbitrary use case descriptions following a fully dressed Cockburn style as described in Wikipedia [1]
 
 Use Case Definition
 -------------------
 
 #### Primary Actor
-        Ops Admin
+Ops Admin
 #### Goal in Context
-        Goal description goes here
+Deploy production ready SAP HANA instance in a fully automated manner into the Cloud.
 #### Scope
-        Component, System or Organization
+System
 #### Level
-        Subfunction, User Goal, Summary or Stratosphere
+Summary
 #### Stakeholders and Interests
-* Business: save money, increase revenue
-* Security: avoid risk
+* Business: make ERP services available world wide
+* Security: data integrity, confidentiality and availability need to be maintained
+* Operations:
+  * deployment needs to be fully automated
+* Application Owner: DB performance equal to on premise
 #### Precondition
-	Whatever it takes.
+* Existing account in cloud
+* SAP account with access to HANA Express
 #### Minimal Guarantees
+TBD
 #### Success Guarantees
+TBD
 #### Trigger
 #### Main Success Scenario
 #### Extensions
 #### Technology & Data Variations List
+* RHEL with disk encryption
+* Ansible
+* SAP HANA Express
+* Satellite
 
 
 Implementation Part 1
@@ -33,4 +42,3 @@ Implementation Part 1
 Validation
 ---------------------
 
-[1] https://en.wikipedia.org/wiki/Use_case
