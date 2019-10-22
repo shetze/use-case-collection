@@ -1,0 +1,201 @@
+# This file is the BrixLab implementation of an environment file for defining the
+# networks and related parameters.
+# We use the following networks and assignments:
+# external      192.168.1.0/24          VLAN 100        fixed:5 defroute: 192.168.1.254 dnsserver: 192.168.1.254
+# ctlplane      192.168.24.0/24         VLAN 1          local:1, public:2, admin:3, fixed:5     instance-dhcp 10-34     inspection 100-120      defroute: 192.168.24.254        EC2: 192.168.24.2       
+# tenant        10.150.0.0/16           VLAN 200        fixed:0.5               dhcp 0.10-0.34  assigned 0.35-0.69
+# storage       172.16.1.0/24           VLAN 201        fixed:5         dhcp 10-34      assigned 35-69
+# internal_api  172.16.2.0/24           VLAN 202        fixed:5         dhcp 10-34      assigned 35-69
+# storage_mgmt  172.16.3.0/24           VLAN 203        fixed:5         dhcp 10-34      assigned 35-69
+# management    172.16.4.0/24           VLAN 204        fixed:5         dhcp 10-34      assigned 35-69
+
+resource_registry:
+  # Custom Network Interface templates to use (these files must exist)
+  OS::TripleO::Controller::Net::SoftwareConfig: /home/stack/templates/nic-configs/controller.yaml
+  OS::TripleO::Compute::Net::SoftwareConfig: /home/stack/templates/nic-configs/compute.yaml
+  OS::TripleO::Networker::Net::SoftwareConfig: /home/stack/templates/nic-configs/networker.yaml
+  # Default Network Interface templates to use (these files may be generated on the fly from j2 templates)
+  OS::TripleO::Network::Ports::ExternalVipPort: /usr/share/openstack-tripleo-heat-templates/network/ports/external.yaml
+
+  OS::TripleO::Controller::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/external_from_pool.yaml
+  OS::TripleO::Controller::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api_from_pool.yaml
+  OS::TripleO::Controller::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_from_pool.yaml
+  OS::TripleO::Controller::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_mgmt_from_pool.yaml
+  OS::TripleO::Controller::Ports::TenantPort: /usr/share/openstack-tripleo-heat-templates/network/ports/tenant_from_pool.yaml
+
+  OS::TripleO::Compute::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Compute::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api_from_pool.yaml
+  OS::TripleO::Compute::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_from_pool.yaml
+  OS::TripleO::Compute::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Compute::Ports::TenantPort: /usr/share/openstack-tripleo-heat-templates/network/ports/tenant_from_pool.yaml
+
+  OS::TripleO::Networker::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::Networker::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api_from_pool.yaml
+  OS::TripleO::Networker::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_from_pool.yaml
+  OS::TripleO::Networker::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_mgmt_from_pool.yaml
+  OS::TripleO::Networker::Ports::TenantPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+
+
+parameter_defaults:
+  NeutronNetworkType: 'vxlan,vlan'
+  NeutronTunnelTypes: 'vxlan'
+  NeutronNetworkVLANRanges: 'datacentre:1:499,tenant:500:1000'
+  # apply networking changes to an existing production overcloud
+  # comment out after usage
+  NetworkDeploymentActions: ["CREATE","UPDATE"]
+  # Set to "br-ex" if using floating IPs on native VLAN on bridge br-ex
+  # Set to empty string to enable multiple external networks or VLANs
+  NeutronExternalNetworkBridge: "''"
+
+  # external      192.168.1.0/24          VLAN 100        fixed:5         dhcp 10-34      defroute: 192.168.1.254
+  # dnsserver: 192.168.1.254
+  ExternalNetCidr: 192.168.1.0/24
+  ExternalNetworkVlanID: 100
+  ExternalAllocationPools: [{'start': '192.168.1.10', 'end': '192.168.1.34'}]
+  # ToDo: this is from Jo's example. Is this really taken into account??
+  PublicVirtualFixedIPs: [{'ip_address':'192.168.1.5'}]
+  ExternalInterfaceDefaultRoute: 192.168.1.254
+  DnsServers: ["192.168.1.254"]
+  # DnsSearchDomains: ["bxlab.lunetix.org"]
+  NtpServer: ["192.53.103.108"]
+
+  # ctlplane      192.168.24.0/24         VLAN 1 (default)  local:1, public:2, admin:3, fixed:5     instance-dhcp 10-34
+  # inspection 100-120      defroute: 192.168.24.254        EC2: 192.168.24.2       
+  ControlPlaneSubnetCidr: '24'
+  ControlPlaneDefaultRoute: 192.168.24.254
+  ControlFixedIPs: [{'ip_address':'192.168.24.5'}]
+  # ToDo: is the EC2MetadataIp the local, public or admin IP of the undercloud??
+  EC2MetadataIp: 192.168.24.2
+
+  # tenant        10.150.0.0/16           VLAN 200        fixed:0.5               dhcp 1.1-1.254  assigned 0.35-0.69
+  TenantNetCidr: 10.150.0.0/16
+  TenantNetworkVlanID: 200
+  TenantAllocationPools: [{'start': '10.150.1.1', 'end': '10.150.1.254'}]
+
+  # storage       172.16.1.0/24           VLAN 201        fixed:5         dhcp 10-34      assigned 35-69
+  StorageNetCidr: 172.16.1.0/24
+  StorageNetworkVlanID: 201
+  StorageAllocationPools: [{'start': '172.16.1.10', 'end': '172.16.1.34'}]
+  StorageVirtualFixedIPs: [{'ip_address':'172.16.1.5'}]
+
+  # internal_api  172.16.2.0/24           VLAN 202        fixed:5         dhcp 10-34      assigned 35-69
+  InternalApiNetCidr: 172.16.2.0/24
+  InternalApiNetworkVlanID: 202
+  InternalApiAllocationPools: [{'start': '172.16.2.10', 'end': '172.16.2.34'}]
+  InternalApiVirtualFixedIPs: [{'ip_address':'172.16.2.5'}]
+  RedisVirtualFixedIPs: [{'ip_address':'172.16.2.6'}]
+
+  # storage_mgmt  172.16.3.0/24           VLAN 203        fixed:5         dhcp 10-34      assigned 35-69
+  StorageMgmtNetCidr: 172.16.3.0/24
+  StorageMgmtNetworkVlanID: 203
+  StorageMgmtAllocationPools: [{'start': '172.16.3.10', 'end': '172.16.3.34'}]
+  StorageMgmtVirtualFixedIPs: [{'ip_address':'172.16.3.5'}]
+
+
+  ControllerIPs:
+    # BxLab has only one Controller, leave space for two more in HA setup
+    external:
+    - 192.168.1.35
+    - 192.168.1.36
+    - 192.168.1.37
+    tenant:
+    - 10.150.0.35
+    - 10.150.0.36
+    - 10.150.0.37
+    storage:
+    - 172.16.1.35
+    - 172.16.1.36
+    - 172.16.1.37
+    internal_api:
+    - 172.16.2.35
+    - 172.16.2.36
+    - 172.16.2.37
+    storage_mgmt:
+    - 172.16.3.35
+    - 172.16.3.36
+    - 172.16.3.37
+    ctlplane:
+    - 192.168.24.35
+    - 192.168.24.36
+    - 192.168.24.37
+  ComputeIPs:
+    # BxLab has three hyperconverged Compute/Ceph nodes, leave space for another three
+    tenant:
+    - 10.150.0.38
+    - 10.150.0.39
+    - 10.150.0.40
+    - 10.150.0.41
+    - 10.150.0.42
+    - 10.150.0.43
+    storage:
+    - 172.16.1.38
+    - 172.16.1.39
+    - 172.16.1.40
+    - 172.16.1.41
+    - 172.16.1.42
+    - 172.16.1.43
+    internal_api:
+    - 172.16.2.38
+    - 172.16.2.39
+    - 172.16.2.40
+    - 172.16.2.41
+    - 172.16.2.42
+    - 172.16.2.43
+    storage_mgmt:
+    - 172.16.3.38
+    - 172.16.3.39
+    - 172.16.3.40
+    - 172.16.3.41
+    - 172.16.3.42
+    - 172.16.3.43
+    ctlplane:
+    - 192.168.24.38
+    - 192.168.24.39
+    - 192.168.24.40
+    - 192.168.24.41
+    - 192.168.24.42
+    - 192.168.24.43
+  NetworkerIPs:
+    # BxLab has three hyperconverged RHV nodes, leave space for another three
+    external:
+    - 192.168.1.44
+    - 192.168.1.45
+    - 192.168.1.46
+    - 192.168.1.47
+    - 192.168.1.48
+    - 192.168.1.49
+    tenant:
+    - 10.150.0.44
+    - 10.150.0.45
+    - 10.150.0.46
+    - 10.150.0.47
+    - 10.150.0.48
+    - 10.150.0.49
+    storage:
+    - 172.16.1.44
+    - 172.16.1.45
+    - 172.16.1.46
+    - 172.16.1.47
+    - 172.16.1.48
+    - 172.16.1.49
+    internal_api:
+    - 172.16.2.44
+    - 172.16.2.45
+    - 172.16.2.46
+    - 172.16.2.47
+    - 172.16.2.48
+    - 172.16.2.49
+    storage_mgmt:
+    - 172.16.3.44
+    - 172.16.3.45
+    - 172.16.3.46
+    - 172.16.3.47
+    - 172.16.3.48
+    - 172.16.3.49
+    ctlplane:
+    - 192.168.24.44
+    - 192.168.24.45
+    - 192.168.24.46
+    - 192.168.24.47
+    - 192.168.24.48
+    - 192.168.24.49

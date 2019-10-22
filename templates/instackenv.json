@@ -1,0 +1,87 @@
+{
+  "nodes": [
+     {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "74:d4:35:4e:39:9c"
+      ],
+      "name": "bx-controller",
+      "cpu": "4",
+      "memory": "16384",
+      "disk": "1000",
+      "arch": "x86_64",
+      "capabilities": "node:control-0,profile:control,boot_option:local"
+    },
+    {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "74:d4:35:4e:39:98"
+      ],
+      "name": "bx-compute1",
+      "cpu": "4",
+      "memory": "16384",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:compute-0,profile:compute,boot_option:local"
+    },
+    {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "74:d4:35:4e:3a:9b"
+      ],
+      "name": "bx-compute2",
+      "cpu": "4",
+      "memory": "16384",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:compute-1,profile:compute,boot_option:local"
+    }, 
+    {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "74:d4:35:4e:38:9b"
+      ],
+      "name": "bx-compute3",
+      "cpu": "4",
+      "memory": "16384",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:compute-2,profile:compute,boot_option:local"
+    },
+    {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "fc:aa:14:ff:a5:19"
+      ],
+      "name": "bx-rhv1",
+      "cpu": "4",
+      "memory": "32768",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:networker-0,profile:networker,boot_option:local"
+    },
+    {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "fc:aa:14:ff:a7:8f"
+      ],
+      "name": "bx-rhv2",
+      "cpu": "4",
+      "memory": "32768",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:networker-1,profile:networker,boot_option:local"
+    },
+    {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "fc:aa:14:ff:a8:c6"
+      ],
+      "name": "bx-rhv3",
+      "cpu": "4",
+      "memory": "32768",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:networker-2,profile:networker,boot_option:local"
+    }      ]
+}
