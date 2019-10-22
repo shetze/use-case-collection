@@ -52,10 +52,16 @@ You will exchange the authorization credentials and the Activation Key with your
 
 The IPA server can be used as CA to sign external SSL certifiates for the OpenStack cloud.
 
-The Director instance may be running as a virtual machine somewhere. In fact, it is quite useful to do so, because such an VM can be snapshotted and easily recovered in case something breaks.
+The Director instance may be running as a virtual machine somewhere. In fact, it is quite useful to do so, because such an VM can be snapshotted and easily recovered in case something breaks using commands like this:
+
+```
+[root@ipa images]# mv RHOS-D13.qcow2 RHOS-D13-base.qcow2; qemu-img create -f qcow2 -F qcow2 -b RHOS-D13-base.qcow2 RHOS-D13.qcow2
+[root@ipa images]# rm -f RHOS-D13.qcow2; qemu-img create -f qcow2 -F qcow2 -b RHOS-D13-base.qcow2 RHOS-D13.qcow2
+[root@ipa images]# 
+```
 
 To deploy the Director as a simple KVM instance, the provided [KVM-Director-13-install.sh](/KVM-Director-13-install.sh)
-scripts encapsulate the virt-install together with the appropriate Kickstart file for the libvirt deployment.
+script encapsulate the virt-install together with the appropriate Kickstart file for the libvirt deployment.
 You will exchange the authorization credentials and the Activation Key with your own, and you probably need to adjust the network settings to fit your environment.
 
 After the Kickstart installation has finished, you may want to register the director in the IPA Realm created above. You also may want to install cockpit and verify that IPA is correctly signing CSRs for the director.
@@ -76,14 +82,80 @@ After the Kickstart installation has finished, you may want to register the dire
 Implementation Part 1: Undercloud Installation
 --------------------------------------------
 
-The actual installation of the Undercloud requires the [undercloud.conf](templates/undercloud.conf) file to be present in the '/home/stack' directory.
+The actual installation of the Undercloud requires the [undercloud.conf](templates/undercloud.conf) file to be present in the `/home/stack` directory.
 You probably want to copy the whole `templates` directory to that location.
 
+Check all the settings in the undercloud.conf for validity in your environment and make changes as appropriate.
+To use IPA as externa CA, you need to create the `haproxy/director..@REALM` Services Principal in your IPA server.
+
+Double-check you have your public IP set as alias on the physical interface of the provisioning network
+```
+2: eth0:
+   inet 192.168.24.2/24 brd 192.168.24.255 scope global eth0:1
+```
+
+For the purpose of a BeoStack Cluster, we want to make use of all available hardware. In particular, we want to include hosts that do not provide any management interface like IPMI.
+OpenStack supports this type of hardware with a so called `fake` driver. However, even though the documentation for OpenStack-13 directs otherwise, we need to set
+```
+enabled_hardware_types = ipmi,manual-management
+```
+using `manual-management` as in OpenStack-14.
+
+We also leave `enabled_drivers` unset at this time.
+
+If everything is set according to your local environment, the undercloud installation may start
+
+```
+[stack@director ~]$ openstack undercloud install
+```
+
+Only after the installation is finished, we change the `enabled_drivers` settings in `/etc/ironic/ironic.conf` to
+
+```
+[root@director ~]# sed -i 's/#enabled_drivers =.*/enabled_drivers=pxe_ipmitool,fake,fake_pxe/' /etc/ironic/ironic.conf
+[root@director ~]# systemctl restart openstack-ironic-conductor
+[root@director ~]# 
+
+
+(undercloud) [stack@director ~]$ openstack baremetal driver list
++---------------------+----------------------------+
+| Supported driver(s) | Active host(s)             |
++---------------------+----------------------------+
+| fake                | director.bxlab.lunetix.org |
+| fake_pxe            | director.bxlab.lunetix.org |
+| ipmi                | director.bxlab.lunetix.org |
+| manual-management   | director.bxlab.lunetix.org |
+| pxe_ipmitool        | director.bxlab.lunetix.org |
++---------------------+----------------------------+
+(undercloud) [stack@director ~]$
+```
+
+The difference between `fake` and `fake_pxe` is that the former expects the node to be running on a pre-provisioned image while the latter uses PXE to deploy the network based image from scratch.
+
+
+In order to perpare for with the overcloud deployment we need to install the deployment images.
+In addition we install the `libguestfs-tools` to customize these images before uploading them.
+Setting the root password may be useful later on for debugging.
+Exchanging the ax88179_178a driver for the ASIX AX88179 USB Ethernet adapter is actually a hard requirement because the driver provided with RHEL has a bug with MTU handling on VLAN networks at least with some switches [1](https://blog.headup.ws/node/45).
+
+```
+[stack@director ~]$ 
+[stack@director ~]$ source ~/stackrc
+(undercloud) [stack@director ~]$ sudo yum -y install rhosp-director-images rhosp-director-images-ipa libguestfs-tools
+(undercloud) [stack@director ~]$ cd ~/images
+(undercloud) [stack@director ~]$ for i in /usr/share/rhosp-director-images/overcloud-full-latest-13.0.tar /usr/share/rhosp-director-images/ironic-python-agent-latest-13.0.tar; do tar -xvf $i; done
+(undercloud) [stack@director ~]$ virt-customize -a overcloud-full.qcow2 --root-password password:Geheim
+(undercloud) [stack@director ~]$ virt-customize -a overcloud-full.qcow2 --copy-in ax88179_178a.ko.xz:/lib/modules/3.10.0-1062.1.2.el7.x86_64/kernel/drivers/net/usb/
+(undercloud) [stack@director ~]$ openstack overcloud image upload --image-path /home/stack/images/
+(undercloud) [stack@director ~]$ openstack subnet set --dns-nameserver 192.168.24.254 ctlplane-subnet
+
+```
 
 
 
 
-
+Implementation Part 2: Overcloud Deployment
+-------------------------------------------
 
 Network Setup
 
@@ -100,9 +172,6 @@ management   | 172.16.4.0/24   | 204 | | | 5         | 10-34      | 35-69 |
 
 
 
-
-Implementation Part 2: Overcloud Deployment
--------------------------------------------
 
 
 
