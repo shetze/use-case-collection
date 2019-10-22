@@ -14,24 +14,24 @@ Use Case Definition
         Summary
 #### Stakeholders and Interests
 * Business:
- * cover peak workload with otherwise idle hardware
- * allow non-destrictive, temporary integration of hardware
- * allow utilization of existing GPU power in decentral workstations
- * use minimal budget
+ ** cover peak workload with otherwise idle hardware
+ ** allow non-destrictive, temporary integration of hardware
+ ** allow utilization of existing GPU power in decentral workstations
+ ** use minimal budget
 * Security: service availability, data integrity and other security topics may be ignored
 * Operations:
- * deployment needs to be fully automated
- * simple classification of different hardware types
- * easy to scale up and down
+  * deployment needs to be fully automated
+  * simple classification of different hardware types
+  * easy to scale up and down
 * Application Owner:
- * Self Service Compute, Storage and Network Ressources
- * Elastic Scalable
- * Tenant Isolation 
+   * Self Service Compute, Storage and Network Ressources
+   * Elastic Scalable
+   * Tenant Isolation 
 #### Precondition
 * Existing Network Infrastructure
- * something like a 24 port VLAN enabled switch
- * two NICs per node, possibly using an external USB interface
- * DNS, NTP, optional CA  (IPA)
+	* something like a 24 port VLAN enabled switch
+	* two NICs per node, possibly using an external USB interface
+	* DNS, NTP, optional CA  (IPA)
 * Some Dedicated Storage
  * at least one whole drive needs to be available for OpenStack
  * harddrive requirements may be fulfilled by an external USB 3.1 Flash Drive
