@@ -44,25 +44,43 @@ Use Case Definition
 #### Technology & Data Variations List
 
 
-Preparation1: IPA and Satellite
+Preparation1: IPA, Satellite and Director Hosts
 -------------------------------
 As basic network infrastructure components, RHEL IPA and Red Hat Satellite come in handy.
-In case these services do not exist yet, the provided Kickstart examples [Kickstart/ipa-ks.cfg] and [Kickstart/sat65-ks.cfg] help to set up these services from scratch.
+In case these services do not exist yet, the provided Kickstart examples [ipa-ks.cfg](/Kickstart/ipa-ks.cfg) and [Kickstart/sat65-ks.cfg](/Kickstart/sat65-ks.cfg) help to set up these services from scratch.
 You will exchange the authorization credentials and the Activation Key with your own, and you probably need to adjust the network settings to fit your environment.
 
 The IPA server can be used as CA to sign external SSL certifiates for the OpenStack cloud.
 
-
-Implementation Part 1: Undercloud Deployment
---------------------------------------------
-
 The Director instance may be running as a virtual machine somewhere. In fact, it is quite useful to do so, because such an VM can be snapshotted and easily recovered in case something breaks.
 
-To deploy the Director as a simple KVM instance, the provided [KVM-Director-13-install.sh]
-You will exchange the authorization credentials and the Activation Key with your own, and you probably need to adjust the network settings to fit your environment.
+To deploy the Director as a simple KVM instance, the provided [KVM-Director-13-install.sh](/KVM-Director-13-install.sh)
 scripts encapsulate the virt-install together with the appropriate Kickstart file for the libvirt deployment.
+You will exchange the authorization credentials and the Activation Key with your own, and you probably need to adjust the network settings to fit your environment.
 
-After the Kickstart installation has finished, 
+After the Kickstart installation has finished, you may want to register the director in the IPA Realm created above. You also may want to install cockpit and verify that IPA is correctly signing CSRs for the director.
+
+```
+[root@director ~]# ipa-client install
+[root@director ~]# yum -y install cockpit
+[root@director ~]# firewall-cmd --add-service=cockpit --permanent
+[root@director ~]# systemctl enable cockpit.socket
+[root@director ~]# CERT_FILE=/etc/pki/tls/certs/$(hostname).pem
+[root@director ~]# KEY_FILE=/etc/pki/tls/private/$(hostname).key
+[root@director ~]# REALM=$(hostname -d|tr '[:lower:]' '[:upper:]');
+[root@director ~]# ipa-getcert request -f ${CERT_FILE} -k ${KEY_FILE} -D $(hostname --fqdn) -C "sed -n w/etc/cockpit/ws-certs.d/50-from-certmonger.cert ${CERT_FILE} ${KEY_FILE}" -K HTTP/$(hostname --fqdn)@${REALM}
+[root@director ~]# ipa-getcert list
+[root@director ~]# 
+```
+
+Implementation Part 1: Undercloud Installation
+--------------------------------------------
+
+The actual installation of the Undercloud requires the [undercloud.conf](templates/undercloud.conf) file to be present in the '/home/stack' directory.
+You probably want to copy the whole `templates` directory to that location.
+
+
+
 
 
 
