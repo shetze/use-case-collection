@@ -5,37 +5,37 @@ Use Case Definition
 -------------------
 
 #### Primary Actor
-        Ops Admin
+ Ops Admin
 #### Goal in Context
-        Create a large OpenStack Cluster consisting of a maximum number of different commodity hardware components.
+Create a large OpenStack Cluster consisting of a maximum number of different commodity hardware components.
 #### Scope
-        System
+ System
 #### Level
-        Summary
+ Summary
 #### Stakeholders and Interests
 * Business:
- ** cover peak workload with otherwise idle hardware
- ** allow non-destrictive, temporary integration of hardware
- ** allow utilization of existing GPU power in decentral workstations
- ** use minimal budget
+  * cover peak workload with otherwise idle hardware
+  * allow non-destrictive, temporary integration of hardware
+  * allow utilization of existing GPU power in decentral workstations
+  * use minimal budget
 * Security: service availability, data integrity and other security topics may be ignored
 * Operations:
   * deployment needs to be fully automated
   * simple classification of different hardware types
   * easy to scale up and down
 * Application Owner:
-   * Self Service Compute, Storage and Network Ressources
-   * Elastic Scalable
-   * Tenant Isolation 
+  * Self Service Compute, Storage and Network Ressources
+  * Elastic Scalable
+  * Tenant Isolation 
 #### Precondition
 * Existing Network Infrastructure
-	* something like a 24 port VLAN enabled switch
-	* two NICs per node, possibly using an external USB interface
-	* DNS, NTP, optional CA  (IPA)
+  * something like a 24 port VLAN enabled switch
+  * two NICs per node, possibly using an external USB interface
+  * DNS, NTP, optional CA  (IPA)
 * Some Dedicated Storage
- * at least one whole drive needs to be available for OpenStack
- * harddrive requirements may be fulfilled by an external USB 3.1 Flash Drive
- * at least three nodes need to have two dedicated harddrives
+  * at least one whole drive needs to be available for OpenStack
+  * harddrive requirements may be fulfilled by an external USB 3.1 Flash Drive
+  * at least three nodes need to have two dedicated harddrives
 #### Minimal Guarantees
 #### Success Guarantees
 #### Trigger
@@ -195,6 +195,7 @@ The installation of the overcloud starts with registering the nodes for introspe
 
 We use the `fake_pxe` driver for nodes that are not equipped with an IPMI interface or more sophisticated management boards. This leaves us with the duty to power the machines on and off as OpenStack Undecloud Installer requires.
 
+
 ```
 (undercloud) [stack@director ~]$ openstack overcloud node import ~/instackenv.json
 (undercloud) [stack@director ~]$ openstack overcloud node introspect --all-manageable --provide
@@ -207,14 +208,19 @@ It is helpful to have a second terminal window open and watch the `openstack bar
 The introspection is a two stage process that requires the systems to power up and PXE boot once for the registration and then power cycle for a cleanup procedure. After cleanup has finished the nodes are in a `power off | available` state.
 
 
+#### Network Setup
+
+Probably the most challenging part of the OpenStack Overcloud deployment is the correct network configuation.
+Regardless how few physical NICs we have, there is a lot of traffic and several different networks have to be prepared.
+
+The following table gives a summary of the demo setup we use for this project.
 
 
-Network Setup
 
 network name | cidr            | VLAN | defroute      | DNS           | fixed IPs       | DHCP range    | Pool  | Extra    
 -------------|-----------------|------|---------------|---------------|-----------------|---------------|-------|------
-external     | 192.168.1.0/24  | 100 | 192.168.1.254  | 192.168.1.254 | 5               |               |       |
 ctlplane     | 192.168.24.0/24 | 1   | 192.168.24.254 | 192.168.122.1 | local: 1 public: 2 admin: 3 fixed: 5 | instance: 10-34 inspect: 100-120 | 35-69 | EC2: 192.168.24.2
+external     | 192.168.1.0/24  | 100 | 192.168.1.254  | 192.168.1.254 | 5               |               |       |
 tenant       | 10.150.0.0/16   | 200 |                |               | 0.5             | 0.10-0.34     | 0.35-0.69 |
 storage      | 172.16.1.0/24   | 201 |                |               | 5               | 10-34         |35-69 |
 internal_api | 172.16.2.0/24   | 202 |                | | 5         | 10-34      | 35-69 |
