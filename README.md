@@ -79,11 +79,21 @@ After the Kickstart installation has finished, you may want to register the dire
 [root@director ~]# 
 ```
 
+Hardware Considerations
+-----------------------
+
+The purpose of this project is to integrate as many nodes into the cluster as possible. We may even want to include desktop hosts that are sitting unused over night and over the weekends to maximize the ressource power of our cluster.
+
+In order to achieve this goal, we make two key design decisions for our BeoStack Cluster:
+1. We use an cheap USB NIC to provide a second Ethernet interface for each node. This allows most desktop or laptop PCs to participate in the cluster. Such an interface is available at littel over €10 per piece.
+2. We use an USB 3.1 Flash Drive as additional harddisk. This allows to deploy the OpenStack Overcloud even on nodes that need to keep their harddisk untouched for the regular day to day work. In addition, such Flash Drive devices allow to build a powerful Hyperconverged Infrastructure with nodes that have only one internal harddisk which can be used for the OpenStack Overcloud installation, but lack the ability to host a second harddisk for Ceph. The USB Flash Drive easily extends that setup and allows a cluster with many such devices to provide a substantial amount of storage for the cluster.
+
+
 Implementation Part 1: Undercloud Installation
 --------------------------------------------
 
 The actual installation of the Undercloud requires the [undercloud.conf](templates/undercloud.conf) file to be present in the `/home/stack` directory.
-You probably want to copy the whole `templates` directory to that location.
+You probably want to copy the whole [templates](/templates) directory to that location.
 
 Check all the settings in the undercloud.conf for validity in your environment and make changes as appropriate.
 To use IPA as externa CA, you need to create the `haproxy/director..@REALM` Services Principal in your IPA server.
@@ -109,7 +119,10 @@ If everything is set according to your local environment, the undercloud install
 [stack@director ~]$ openstack undercloud install
 ```
 
-Only after the installation is finished, we change the `enabled_drivers` settings in `/etc/ironic/ironic.conf` to
+#### Enabling the fake_pxe Driver
+
+Only after the installation is finished, we change the `enabled_drivers` settings in `/etc/ironic/ironic.conf` to enable the fake drivers [Blog](https://blog.headup.ws/node/45).
+
 
 ```
 [root@director ~]# sed -i 's/#enabled_drivers =.*/enabled_drivers=pxe_ipmitool,fake,fake_pxe/' /etc/ironic/ironic.conf
@@ -133,10 +146,12 @@ Only after the installation is finished, we change the `enabled_drivers` setting
 The difference between `fake` and `fake_pxe` is that the former expects the node to be running on a pre-provisioned image while the latter uses PXE to deploy the network based image from scratch.
 
 
-In order to perpare for with the overcloud deployment we need to install the deployment images.
+#### Fixing the ASIX AX88179 USB Network Driver
+
+In order to perpare for the overcloud deployment we need to install the deployment images.
 In addition we install the `libguestfs-tools` to customize these images before uploading them.
 Setting the root password may be useful later on for debugging.
-Exchanging the ax88179_178a driver for the ASIX AX88179 USB Ethernet adapter is actually a hard requirement because the driver provided with RHEL has a bug with MTU handling on VLAN networks at least with some switches [1](https://blog.headup.ws/node/45).
+Exchanging the ax88179_178a driver for the ASIX AX88179 USB Ethernet adapter is actually a hard requirement because the driver provided with RHEL has a bug with MTU handling on VLAN networks at least with some switches [Blog](https://www.dynatrace.com/news/blog/openstack-network-mystery-2-bytes-cost-me-two-days-of-trouble/).
 
 ```
 [stack@director ~]$ 
@@ -151,11 +166,48 @@ Exchanging the ax88179_178a driver for the ASIX AX88179 USB Ethernet adapter is 
 
 ```
 
-
+These steps conclude the installation of the Undercloud, next is the deployment of the Ocercloud.
 
 
 Implementation Part 2: Overcloud Deployment
 -------------------------------------------
+
+#### Introspection
+
+The installation of the overcloud starts with registering the nodes for introspection.
+
+```
+"nodes": [
+     {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "74:d4:35:4e:39:9c"
+      ],
+      "name": "bx-controller",
+      "cpu": "4",
+      "memory": "16384",
+      "disk": "1000",
+      "arch": "x86_64",
+      "capabilities": "node:control-0,profile:control,boot_option:local"
+    }   ]
+}
+```
+
+We use the `fake_pxe` driver for nodes that are not equipped with an IPMI interface or more sophisticated management boards. This leaves us with the duty to power the machines on and off as OpenStack Undecloud Installer requires.
+
+```
+(undercloud) [stack@director ~]$ openstack overcloud node import ~/instackenv.json
+(undercloud) [stack@director ~]$ openstack overcloud node introspect --all-manageable --provide
+
+
+(undercloud) [stack@director ~]$ watch -n 10 openstack baremetal node list
+```
+
+It is helpful to have a second terminal window open and watch the `openstack baremetal node list` for all power cycle requirements.
+The introspection is a two stage process that requires the systems to power up and PXE boot once for the registration and then power cycle for a cleanup procedure. After cleanup has finished the nodes are in a `power off | available` state.
+
+
+
 
 Network Setup
 
