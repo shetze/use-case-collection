@@ -124,12 +124,12 @@ resources:
                 members:
                 - type: interface
                   name: enp3s0
-                  mtu: 9000
+                  mtu: 1500
                   primary: true
                 - type: vlan
                   vlan_id:
                     get_param: StorageNetworkVlanID
-                  mtu: 9000
+                  mtu: 1500
                   addresses:
                   - ip_netmask:
                       get_param: StorageIpSubnet
