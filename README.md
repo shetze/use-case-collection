@@ -44,6 +44,18 @@ Create a large OpenStack Cluster consisting of a maximum number of different com
 #### Technology & Data Variations List
 
 
+Rationale
+---------
+
+Back in the days, we have built huge HPC clusters using inexpensive PC hardware modeled after the [Beowulf Cluster](https://en.wikipedia.org/wiki/Beowulf_cluster) built by Thomas Sterling and Donald Becker at NASA.
+
+In December 1998, we have built a huge Beowulf Cluster named [CLOWN](https://www.heise.de/ix/artikel/Manege-frei-505610.html) with more than 500 nodes.
+
+While this is more than 20 years ago, the basic idea is still valid. The [CERN](https://superuser.openstack.org/articles/openstack-production-cern-lightning-talk/) research organization glues hundreds of nodes from participating organizations with 170 datacenters into their OpenStack compute grid.
+
+So why not raise the Beowulf approach to the OpenStack level. AI for example is one  
+
+
 Preparation1: IPA, Satellite and Director Hosts
 -------------------------------
 As basic network infrastructure components, RHEL IPA and Red Hat Satellite come in handy.
@@ -208,6 +220,54 @@ It is helpful to have a second terminal window open and watch the `openstack bar
 The introspection is a two stage process that requires the systems to power up and PXE boot once for the registration and then power cycle for a cleanup procedure. After cleanup has finished the nodes are in a `power off | available` state.
 
 
+#### Root Disk Assignment
+
+In case the introspected nodes have more than one harddisk, we may want to make a clear assignment for the `root_drive` the Overcloud Installer stores the OS for the OpenStack node.
+All required information about the the discovered hardware is stored in the Undercloud during introspection. We can query that information and assign the `root_drive` as appropriate
+
+```
+(undercloud) [stack@director ~]$ openstack baremetal node list
++--------------------------------------+---------------+--------------------------------------+-------------+--------------------+-------------+
+| UUID                                 | Name          | Instance UUID                        | Power State | Provisioning State | Maintenance |
++--------------------------------------+---------------+--------------------------------------+-------------+--------------------+-------------+
+| 6252cffd-eafb-4ec3-9473-1c9c7cf298fa | bx-controller | 0ee387e2-0c7c-4315-a757-11610052eb27 | power on    | deploying          | False       |
+| 626b15cf-633f-4810-ab48-2f98d98afd4f | bx-compute1   | 1ee22a77-0377-49b4-9d21-d89a9333a0a1 | power on    | deploying          | False       |
+| 5d667649-9c2b-4307-8fcf-7c695cf251c2 | bx-compute2   | 3f2970c9-3cd9-4702-ae0d-d00eac68c654 | power on    | deploying          | False       |
+| 4fc5eb62-7022-460f-99f7-5214a4bebee9 | bx-compute3   | e54c2c9e-6447-442d-93ff-846405189f57 | power on    | deploying          | False       |
++--------------------------------------+---------------+--------------------------------------+-------------+--------------------+-------------+
+(undercloud) [stack@director ~]$ UUID=626b15cf-633f-4810-ab48-2f98d98afd4f
+(undercloud) [stack@director ~]$ openstack baremetal introspection data save $UUID | jq ".inventory.disks"
+[
+  {
+    "size": 250059350016,
+    "serial": "S21PNSAG767030W",
+    "wwn": "0x5002538da031d203",
+    "rotational": false,
+    "vendor": "ATA",
+    "name": "/dev/sda",
+    "wwn_vendor_extension": null,
+    "hctl": "1:0:0:0",
+    "wwn_with_extension": "0x5002538da031d203",
+    "by_path": "/dev/disk/by-path/pci-0000:00:1f.2-ata-2.0",
+    "model": "Samsung SSD 850"
+  },
+  {
+    "size": 256641603584,
+    "serial": "0330119070014981",
+    "wwn": null,
+    "rotational": true,
+    "vendor": "Samsung",
+    "name": "/dev/sdb",
+    "wwn_vendor_extension": null,
+    "hctl": "3:0:0:0",
+    "wwn_with_extension": null,
+    "by_path": "/dev/disk/by-path/fc---lun-0",
+    "model": "Flash Drive FIT"
+  }
+]
+(undercloud) [stack@director ~]$ openstack baremetal node set --property root_device='{"serial": "S21PNSAG767030W"}' $UUID
+```
+
 #### Network Setup
 
 Probably the most challenging part of the OpenStack Overcloud deployment is the correct network configuation.
@@ -229,10 +289,9 @@ management   | 172.16.4.0/24   | 204 | | | 5         | 10-34      | 35-69 |
 
 
 
+Some settings for the controlplane have already been declared in the undercloud.conf file. The other values are assigned in the [network-environment.yaml](/templates/network-environment.yaml) file. Like the table above, this file is fairly condensed and includes pretty much all required settings for our network environment.
 
-
-
-
+The default node configuration uses abstract NIC assignemnts `nic1`, `nic2` which are mapped to the actual devices on the fly as they occur on the PCI bus. If this does not fit your needs, you may use the device names directly as shown in [controller.yaml](/templates/nic-configs/controller.yaml) and [compute.yaml](/templates/nic-configs/compute.yaml).
 
 
 Validation
