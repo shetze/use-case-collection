@@ -99,12 +99,9 @@ resources:
             get_file: /usr/share/openstack-tripleo-heat-templates/network/scripts/run-os-net-config.sh
           params:
             $network_config:
-              interface_mapping:
-                nic1: enp3s0
-                nic2: enp0s20u4
               network_config:
               - type: ovs_bridge
-                name: onboard-bridge
+                name: nic2-bridge
                 use_dhcp: false
                 dns_servers:
                   get_param: DnsServers
@@ -123,7 +120,7 @@ resources:
                     get_param: ControlPlaneDefaultRoute
                 members:
                 - type: interface
-                  name: enp3s0
+                  name: nic2
                   mtu: 1500
                   primary: true
                 - type: vlan
@@ -134,13 +131,13 @@ resources:
                   - ip_netmask:
                       get_param: StorageIpSubnet
               - type: ovs_bridge
-                name: dongle-bridge
+                name: bridge_name
                 use_dhcp: false
                 dns_servers:
                   get_param: DnsServers
                 members:
                 - type: interface
-                  name: enp0s20u4
+                  name: nic1
                   mtu: 1500
                   primary: true
                 - type: vlan
