@@ -85,8 +85,13 @@ parameter_defaults:
 
   CephAnsibleDisksConfig:
      devices:
-     - /dev/sdb
+     - /dev/sdc
      osd_scenario: lvm
+
+     #  msg": "/dev/disk/by-id/ata-ST2000LX001-1RG174_WCC2N8ZP is not a block special file!"
+     # - /dev/disk/by-id/ata-ST2000LX001-1RG174_WCC2T2YA
+     # - /dev/disk/by-id/ata-ST2000LX001-1RG174_WCC2N8ZP
+     # - /dev/disk/by-id/ata-ST2000LX001-1RG174_WCC2SJDQ
 
   CephAnsibleExtraConfig:
     # see: https://access.redhat.com/documentation/en-us/red_hat_openstack_platform/13/html-single/hyper-converged_infrastructure_guide/#resource-isolation-ceph-backfill
