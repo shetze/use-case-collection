@@ -1,0 +1,7 @@
+parameter_defaults:
+  NodeDataLookup: |
+    {
+     "03aa02fc-0414-05ff-a506-190700080009": {"devices": ["/dev/sda"]},
+     "03aa02fc-0414-05ff-a706-8f0700080009": {"devices": ["/dev/sda"]},
+     "03aa02fc-0414-05ff-a806-c60700080009": {"devices": ["/dev/sda"]}
+    }
