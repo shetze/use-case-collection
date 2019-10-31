@@ -12,6 +12,7 @@
 resource_registry:
   # Custom Network Interface templates to use (these files must exist)
   OS::TripleO::Controller::Net::SoftwareConfig: /home/stack/templates/nic-configs/controller.yaml
+  OS::TripleO::ComputeHCI::Net::SoftwareConfig: /home/stack/templates/nic-configs/hci.yaml
   OS::TripleO::Compute::Net::SoftwareConfig: /home/stack/templates/nic-configs/compute.yaml
   OS::TripleO::Networker::Net::SoftwareConfig: /home/stack/templates/nic-configs/networker.yaml
   # Default Network Interface templates to use (these files may be generated on the fly from j2 templates)
@@ -22,6 +23,12 @@ resource_registry:
   OS::TripleO::Controller::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_from_pool.yaml
   OS::TripleO::Controller::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_mgmt_from_pool.yaml
   OS::TripleO::Controller::Ports::TenantPort: /usr/share/openstack-tripleo-heat-templates/network/ports/tenant_from_pool.yaml
+
+  OS::TripleO::ComputeHCI::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
+  OS::TripleO::ComputeHCI::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api_from_pool.yaml
+  OS::TripleO::ComputeHCI::Ports::StoragePort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_from_pool.yaml
+  OS::TripleO::ComputeHCI::Ports::StorageMgmtPort: /usr/share/openstack-tripleo-heat-templates/network/ports/storage_mgmt_from_pool.yaml
+  OS::TripleO::ComputeHCI::Ports::TenantPort: /usr/share/openstack-tripleo-heat-templates/network/ports/tenant_from_pool.yaml
 
   OS::TripleO::Compute::Ports::ExternalPort: /usr/share/openstack-tripleo-heat-templates/network/ports/noop.yaml
   OS::TripleO::Compute::Ports::InternalApiPort: /usr/share/openstack-tripleo-heat-templates/network/ports/internal_api_from_pool.yaml
@@ -39,13 +46,15 @@ resource_registry:
 parameter_defaults:
   NeutronNetworkType: 'vxlan,vlan'
   NeutronTunnelTypes: 'vxlan'
-  NeutronNetworkVLANRanges: 'datacentre:1:499,tenant:500:1000'
+  NeutronNetworkVLANRanges: 'datacentre:250:259,nictwo:260:269,tenant:270:279'
   # apply networking changes to an existing production overcloud
   # comment out after usage
   NetworkDeploymentActions: ["CREATE","UPDATE"]
   # Set to "br-ex" if using floating IPs on native VLAN on bridge br-ex
   # Set to empty string to enable multiple external networks or VLANs
   NeutronExternalNetworkBridge: "''"
+  # NeutronPhysicalBridge: 'br-ex'
+  NeutronBridgeMappings: datacentre:br-ex,nictwo:nic2-bridge
 
   # external      192.168.1.0/24          VLAN 100        fixed:5         dhcp 10-34      defroute: 192.168.1.254
   # dnsserver: 192.168.1.254
@@ -118,8 +127,8 @@ parameter_defaults:
     - 192.168.24.35
     - 192.168.24.36
     - 192.168.24.37
-  ComputeIPs:
-    # BxLab has three hyperconverged Compute/Ceph nodes, leave space for another three
+  ComputeHCIIPs:
+    # BxLab has three hyperconverged Hci/Ceph nodes, leave space for another three
     tenant:
     - 10.150.0.38
     - 10.150.0.39
@@ -155,15 +164,8 @@ parameter_defaults:
     - 192.168.24.41
     - 192.168.24.42
     - 192.168.24.43
-  NetworkerIPs:
-    # BxLab has three hyperconverged RHV nodes, leave space for another three
-    external:
-    - 192.168.1.44
-    - 192.168.1.45
-    - 192.168.1.46
-    - 192.168.1.47
-    - 192.168.1.48
-    - 192.168.1.49
+  ComputeIPs:
+    # BxLab has three plain compute nodes, leave space for another three
     tenant:
     - 10.150.0.44
     - 10.150.0.45
@@ -171,6 +173,7 @@ parameter_defaults:
     - 10.150.0.47
     - 10.150.0.48
     - 10.150.0.49
+    - 10.150.0.50
     storage:
     - 172.16.1.44
     - 172.16.1.45
@@ -178,6 +181,7 @@ parameter_defaults:
     - 172.16.1.47
     - 172.16.1.48
     - 172.16.1.49
+    - 172.16.1.50
     internal_api:
     - 172.16.2.44
     - 172.16.2.45
@@ -185,6 +189,7 @@ parameter_defaults:
     - 172.16.2.47
     - 172.16.2.48
     - 172.16.2.49
+    - 172.16.2.50
     storage_mgmt:
     - 172.16.3.44
     - 172.16.3.45
@@ -192,6 +197,7 @@ parameter_defaults:
     - 172.16.3.47
     - 172.16.3.48
     - 172.16.3.49
+    - 172.16.3.50
     ctlplane:
     - 192.168.24.44
     - 192.168.24.45
@@ -199,3 +205,34 @@ parameter_defaults:
     - 192.168.24.47
     - 192.168.24.48
     - 192.168.24.49
+    - 192.168.24.50
+  NetworkerIPs:
+    # BxLab has three plain compute nodes, leave space for another three
+    tenant:
+    - 10.150.0.60
+    - 10.150.0.61
+    - 10.150.0.62
+    - 10.150.0.63
+    - 10.150.0.64
+    - 10.150.0.65
+    storage:
+    - 172.16.1.60
+    - 172.16.1.61
+    - 172.16.1.62
+    - 172.16.1.63
+    - 172.16.1.64
+    - 172.16.1.65
+    internal_api:
+    - 172.16.2.60
+    - 172.16.2.61
+    - 172.16.2.62
+    - 172.16.2.63
+    - 172.16.2.64
+    - 172.16.2.65
+    ctlplane:
+    - 192.168.24.60
+    - 192.168.24.61
+    - 192.168.24.62
+    - 192.168.24.63
+    - 192.168.24.64
+    - 192.168.24.65
