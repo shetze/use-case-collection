@@ -294,6 +294,43 @@ Some settings for the controlplane have already been declared in the undercloud.
 The default node configuration uses abstract NIC assignemnts `nic1`, `nic2` which are mapped to the actual devices on the fly as they occur on the PCI bus. If this does not fit your needs, you may use the device names directly as shown in [controller.yaml](/templates/nic-configs/controller.yaml) and [compute.yaml](/templates/nic-configs/compute.yaml).
 
 
+Scaling the Cluster
+---------------------
+
+The basic idea of the BeoStack Cluster is to integrate as much compute power into the cluster as possible.
+
+However, the standard deployment workflow for OpenStack nodes is a) destructive and b) time consuming.
+
+To allow hosts to join the cluster without replacing their current OS and
+software, we use the USB Flash Drive as easy to add and replace storage. In
+order to make the Cluster as flexible as possible, it would be nice if such USB
+Flash Drives could just be moved around and plugged into arbitrary hosts as
+they become available.
+
+It appears, this is in fact the case.
+While the original deployment cares about MAC address
+for the boot device, the running Overcloud instance is pretty much independent of the
+hardware and the details of the mainboard manufacturer.
+
+In the Undercloud, the connection between the baremetal machine with its UUID and the Overcloud instance becomes invalid after moving the Flash Drive to another host.
+
+To fix that you may undeploy and delete the original baremetal node in the Undercloud and then import a new record for the now migrated Flash host. This new baremetal node can then be adopted by the Undercloud. 
+
+The image_source setting is required while the actual image is not used.
+
+```
+(undercloud) [stack@director ~]$ openstack baremetal node undeploy $UUID
+(undercloud) [stack@director ~]$ openstack baremetal node delete $UUID
+(undercloud) [stack@director ~]$ openstack overcloud node import ~/newhost.json
+(undercloud) [stack@director ~]$ ironic node-update <NEWHOST> add instance_info/image_source="http://localhost:8088/overcloud-full.qcow2" instance_info/capabilities="{\"boot_option\": \"local\"}"
+(undercloud) [stack@director ~]$ openstack baremetal node adopt <NEWUUID>
+(undercloud) [stack@director ~]$ openstack baremetal node set --instance-uuid <OldInstanceUUID> <NEWUUID>
+```
+
+After undeploying the old node it may be reused to create another Flash Drive. 
+
+
+
 Validation
 ---------------------
 
