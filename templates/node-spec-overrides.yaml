@@ -1,7 +1,13 @@
 parameter_defaults:
   NodeDataLookup: |
     {
-     "03aa02fc-0414-05ff-a506-190700080009": {"devices": ["/dev/sda"]},
-     "03aa02fc-0414-05ff-a706-8f0700080009": {"devices": ["/dev/sda"]},
-     "03aa02fc-0414-05ff-a806-c60700080009": {"devices": ["/dev/sda"]}
+     "03aa02fc-0414-05ff-a506-190700080009": {"devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-1.0"], "dedicated_devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-3.0"]},
+     "03aa02fc-0414-05ff-a706-8f0700080009": {"devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-1.0"], "dedicated_devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-3.0"]},
+     "03aa02fc-0414-05ff-a806-c60700080009": {"devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-1.0"], "dedicated_devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-3.0"]},
+     "03aa02fc-0414-05ff-a206-f50700080009": {"devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-1.0"], "dedicated_devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-3.0"]},
+     "03aa02fc-0414-05ff-a706-ea0700080009": {"devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-1.0"], "dedicated_devices": ["/dev/disk/by-path/pci-0000:00:17.0-ata-3.0"]},
+     "03d40274-0435-054e-3906-980700080009": {"devices": ["/dev/sdb"], "dedicated_devices": ["/dev/sdc"]},
+     "03d40274-0435-054e-3a06-9b0700080009": {"devices": ["/dev/sdb"], "dedicated_devices": ["/dev/sdc"]},
+     "03d40274-0435-054e-3806-9b0700080009": {"devices": ["/dev/sdb"], "dedicated_devices": ["/dev/sdc"]},
+     "03d40274-0435-0560-e706-cd0700080009": {"devices": ["/dev/sdb"], "dedicated_devices": ["/dev/sdc"]}
     }
