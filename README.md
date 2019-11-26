@@ -158,12 +158,19 @@ Only after the installation is finished, we change the `enabled_drivers` setting
 The difference between `fake` and `fake_pxe` is that the former expects the node to be running on a pre-provisioned image while the latter uses PXE to deploy the network based image from scratch.
 
 
-#### Fixing the ASIX AX88179 USB Network Driver
+#### Fixing the ASIX AX88179 and Realtec R8152 USB Network Driver
 
 In order to perpare for the overcloud deployment we need to install the deployment images.
 In addition we install the `libguestfs-tools` to customize these images before uploading them.
 Setting the root password may be useful later on for debugging.
+
 Exchanging the ax88179_178a driver for the ASIX AX88179 USB Ethernet adapter is actually a hard requirement because the driver provided with RHEL has a bug with MTU handling on VLAN networks at least with some switches [Blog](https://www.dynatrace.com/news/blog/openstack-network-mystery-2-bytes-cost-me-two-days-of-trouble/).
+
+The Realtec R8152 apparently has some stability issues with the driver provided with OpenStack-13 which lead to USB bus reset and loss of the associated bridge devices. The newest driver does not have these issues.
+
+Both divers need to be compiled for RHEL-7. Some minor patches like renaming '.ndo_change_mtu' to '.ndo_change_mtu_rh74' may be required.
+
+In order to establish a smooth deployment workflow, it is necessary to replace the initramfs in the 'overcloud-full.qcow2' image with one containing the updated USB network drivers.
 
 ```
 [stack@director ~]$ 
@@ -172,21 +179,55 @@ Exchanging the ax88179_178a driver for the ASIX AX88179 USB Ethernet adapter is 
 (undercloud) [stack@director ~]$ cd ~/images
 (undercloud) [stack@director ~]$ for i in /usr/share/rhosp-director-images/overcloud-full-latest-13.0.tar /usr/share/rhosp-director-images/ironic-python-agent-latest-13.0.tar; do tar -xvf $i; done
 (undercloud) [stack@director ~]$ virt-customize -a overcloud-full.qcow2 --root-password password:Geheim
-(undercloud) [stack@director ~]$ virt-customize -a overcloud-full.qcow2 --copy-in ax88179_178a.ko.xz:/lib/modules/3.10.0-1062.1.2.el7.x86_64/kernel/drivers/net/usb/
+(undercloud) [stack@director ~]$ virt-customize -a overcloud-full.qcow2 --copy-in ax88179_178a.ko.xz:/lib/modules/3.10.0-1062.4.1.el7.x86_64/kernel/drivers/net/usb/
+(undercloud) [stack@director ~]$ virt-customize -a overcloud-full.qcow2 --copy-in r8152.ko.xz:/lib/modules/3.10.0-1062.4.1.el7.x86_64/kernel/drivers/net/usb/
+(undercloud) [stack@director ~]$ virt-customize -a overcloud-full.qcow2 --copy-in initramfs-3.10.0-1062.4.1.el7.x86_64.img:/boot
 (undercloud) [stack@director ~]$ openstack overcloud image upload --image-path /home/stack/images/
 (undercloud) [stack@director ~]$ openstack subnet set --dns-nameserver 192.168.24.254 ctlplane-subnet
 
 ```
 
-These steps conclude the installation of the Undercloud, next is the deployment of the Ocercloud.
+These steps conclude the installation of the Undercloud, next is the deployment of the Overcloud.
 
 
 Implementation Part 2: Overcloud Deployment
 -------------------------------------------
 
+The Beostack Overcloud Cluster shall consist of three types of nodes:
+* Controller (1 or 3 nodes),
+* at least three dedicated hyperconverged ComputeHCI nodes with at least one internal SSD that will be integrated into one Ceph cluster and
+* an arbitrary number of Compute nodes which provide CPU and RAM for the cluster.
+
+In order to allow integration of such nodes in an OpenShift-4.2 IPI cluster running on top of these nodes, the nodes must have at least 16GB of RAM. Four nodes with 24GB or more are required for the Master and Boostrap nodes.
+
+
+The ComputeHCI role does not have a predefined flavor associated, so we create one:
+
+```
+(undercloud) [stack@director ~]$ openstack overcloud roles generate -o templates/roles_data.yaml Controller ComputeHCI Compute
+(undercloud) [stack@director ~]$ openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 hci
+(undercloud) [stack@director ~]$ openstack flavor set --property resources:VCPU=0 --property resources:MEMORY_MB=0 --property resources:DISK_GB=0 --property resources:CUSTOM_BAREMETAL=1 hci
+(undercloud) [stack@director ~]$ openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="hci" hci
+```
+
+With that, we can proceed with the Introspection.
+
 #### Introspection
 
 The installation of the overcloud starts with registering the nodes for introspection.
+
+_WARNING!_ The introspection of OpenStack Nodes includes a Cleanup phase.
+During Cleanup any disks are wiped. While this makes sense for a dedicated
+OpenStack node that is meant to join a cluster permanently, for the purpose of
+our Beostack cluster where nodes may join temporarily and return to their
+original role later on, this Cleanup may cause severe problems.
+
+We intend to mitigate that challenge by cloning Flash Drives from existing
+nodes without acutally going through a complete deployment. This step has not
+been described yet and needs further investigation.
+
+
+The Introspection statrs with importing a list of node descriptors like the following example:
 
 ```
 "nodes": [
@@ -201,11 +242,39 @@ The installation of the overcloud starts with registering the nodes for introspe
       "disk": "1000",
       "arch": "x86_64",
       "capabilities": "node:control-0,profile:control,boot_option:local"
+     },
+...
+     {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "fc:aa:14:ff:a5:19"
+      ],
+      "name": "bx-hci1",
+      "cpu": "4",
+      "memory": "32768",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:hci-1,profile:hci,boot_option:local"
+    },
+...
+    {
+      "pm_type": "fake_pxe",
+      "mac": [
+        "74:d4:35:4e:39:98"
+      ],
+      "name": "bx-compute1",
+      "cpu": "4",
+      "memory": "16384",
+      "disk": "250",
+      "arch": "x86_64",
+      "capabilities": "node:compute-1,profile:compute,boot_option:local"
     }   ]
 }
 ```
 
+
 We use the `fake_pxe` driver for nodes that are not equipped with an IPMI interface or more sophisticated management boards. This leaves us with the duty to power the machines on and off as OpenStack Undecloud Installer requires.
+
 
 
 ```
@@ -221,6 +290,7 @@ The introspection is a two stage process that requires the systems to power up a
 
 
 #### Root Disk Assignment
+
 
 In case the introspected nodes have more than one harddisk, we may want to make a clear assignment for the `root_drive` the Overcloud Installer stores the OS for the OpenStack node.
 All required information about the the discovered hardware is stored in the Undercloud during introspection. We can query that information and assign the `root_drive` as appropriate
@@ -267,6 +337,12 @@ All required information about the the discovered hardware is stored in the Unde
 ]
 (undercloud) [stack@director ~]$ openstack baremetal node set --property root_device='{"serial": "S21PNSAG767030W"}' $UUID
 ```
+
+Installing the Overcloud Nodes on USB Flash Drives works just fine.
+
+If available, an internal SSD may be used for the hyperconverged Ceph setup.
+
+
 
 #### Network Setup
 
